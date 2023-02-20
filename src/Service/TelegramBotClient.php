@@ -7,6 +7,8 @@ use Symfony\Component\HttpClient\Exception\ClientException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mime\Part\DataPart;
+use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 
 class TelegramBotClient
 {
@@ -46,23 +48,30 @@ class TelegramBotClient
         return $response->toArray();
     }
 
-    public function sendFile(string $filePath, string $chatId, string $caption)
-    {
-        try {
-            $response = $this->httpClient->request(
-                Request::METHOD_POST,
-                self::API . $this->token . '/' . self::SEND_DOCUMENT,
-                [
 
-                    'body' => [
-                        'chat_id' => $chatId,
-                        'caption' => $caption,
-                        'document' =>  curl_file_create($filePath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Мой файл'),
-                    ]
-                ]
-            );
-        } catch (ClientException $exception) {
-            var_dump($exception);
-        }
+    public function sendDocument(string $chatId, string $filePath)
+    {
+        $formFields = [
+            'chat_id' => $chatId,
+            'document' => DataPart::fromPath($filePath),
+        ];
+        $formData = new FormDataPart($formFields);
+
+        $response = $this->httpClient->request(
+            Request::METHOD_POST,
+            $this->getUri(self::SEND_DOCUMENT),
+            // self::API . $this->token . '/' . self::SEND_DOCUMENT, // = строка 62
+            [
+                'headers' => $formData->getPreparedHeaders()->toArray(),
+                'body' => $formData->bodyToIterable(),
+            ]
+        );
+
+        return $response->toArray();
+    }
+
+    private function getUri(string $telegramMethod): string
+    {
+        return self::API . $this->token . '/' . $telegramMethod;
     }
 }
