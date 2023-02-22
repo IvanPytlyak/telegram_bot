@@ -16,6 +16,8 @@ class TelegramBotClient
     private const SEND_MESSAGE = 'sendMessage';
     private const GET_UPDATES = 'getUpdates';
     private const SEND_DOCUMENT = 'sendDocument'; //TG API
+    private const SEND_PHOTO = 'sendPhoto'; // капсовые названия = рандом генерация?
+    private const SEND_AUDIO = 'sendAudio';
 
     private string $token;
     private HttpClientInterface $httpClient;
@@ -73,5 +75,43 @@ class TelegramBotClient
     private function getUri(string $telegramMethod): string
     {
         return self::API . $this->token . '/' . $telegramMethod;
+    }
+
+
+
+    public function sendPhoto(string $chatId, string $photoPath)
+    {
+        $formFields = [
+            'chat_id' => $chatId,
+            'photo' => DataPart::fromPath($photoPath),
+        ];
+        $formData = new FormDataPart($formFields);
+        $response = $this->httpClient->request(
+            Request::METHOD_POST,
+            $this->getUri(self::SEND_PHOTO),
+            [
+                'headers' => $formData->getPreparedHeaders()->toArray(),
+                'body' => $formData->bodyToIterable(),
+            ]
+        );
+        return $response->toArray();
+    }
+
+    public function sendAudio(string $chatId, string $audioPath)
+    {
+        $formFields = [
+            'chat_id' => $chatId,
+            'audio' => DataPart::fromPath($audioPath),
+        ];
+        $formData = new FormDataPart($formFields);
+        $response = $this->httpClient->request(
+            Request::METHOD_POST,
+            $this->getUri(self::SEND_AUDIO),
+            [
+                'headers' => $formData->getPreparedHeaders()->toArray(),
+                'body' => $formData->bodyToIterable(),
+            ]
+        );
+        return $response->toArray();
     }
 }
